@@ -1,12 +1,16 @@
 package org.scoula.security.config;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.csrf.CsrfFilter;
@@ -15,7 +19,12 @@ import org.springframework.web.filter.CharacterEncodingFilter;
 @Configuration
 @Log4j2
 @EnableWebSecurity // spring security에서 웹 보안 설정을 활성화하는 어노테이션
+@MapperScan(basePackages = {"org.scoula.security.account.mapper"}) // 여기서 userdetailsmapper가 검색되도록 설정 추가하기
+@ComponentScan(basePackages = {"org.scoula.security"})
+@RequiredArgsConstructor
 public class SecurityConfig extends WebSecurityConfigurerAdapter { // spring security를 위한 기본 골격으로 Extends 함.
+
+    private final UserDetailsService userDetailsService;
 
     // passwordEncoder 빈 등록
     @Bean
@@ -70,19 +79,22 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter { // spring sec
 
         log.info ("memory database configure ..........................................");
 
-        auth.inMemoryAuthentication()
-                .withUser("admin") // 아이디
-//                .password("{noop}1234") // {noop} == 암호화 되어 있지 않음
-                // 메모리 등록 유저의 비빌번호를 암호화된 비밀번호로 대체
-                .password("$2a$10$7NVuOZra2b8KvW68RdXgkOaKG1Y5gBquRX9ZYacTtmTe8L7Jkkft.")
-                .roles("ADMIN", "MEMBER");
+//        auth.inMemoryAuthentication()
+//                .withUser("admin") // 아이디
+////                .password("{noop}1234") // {noop} == 암호화 되어 있지 않음
+//                // 메모리 등록 유저의 비빌번호를 암호화된 비밀번호로 대체
+//                .password("$2a$10$7NVuOZra2b8KvW68RdXgkOaKG1Y5gBquRX9ZYacTtmTe8L7Jkkft.")
+//                .roles("ADMIN", "MEMBER");
+//
+//        auth.inMemoryAuthentication()
+//                .withUser("member")
+////                .password("{noop}1234")
+//                .password("$2a$10$VMUk4Vy..fjAQsbUYT2ZPOGQ8f5Xtj1zWehzwxk5BORLXsIKw64S.")
+//                .roles("MEMBER");
 
-        auth.inMemoryAuthentication()
-                .withUser("member")
-//                .password("{noop}1234")
-                .password("$2a$10$VMUk4Vy..fjAQsbUYT2ZPOGQ8f5Xtj1zWehzwxk5BORLXsIKw64S.")
-                .roles("MEMBER");
-
+        auth
+                .userDetailsService(userDetailsService)
+                .passwordEncoder(passwordEncoder());
 
 
     }
