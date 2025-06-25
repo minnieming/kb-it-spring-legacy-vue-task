@@ -1,57 +1,80 @@
 package org.scoula.board.controller;
 
-import io.swagger.annotations.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.scoula.board.domain.BoardAttachmentVO;
 import org.scoula.board.dto.BoardDTO;
 import org.scoula.board.service.BoardService;
-import org.springframework.http.ResponseEntity;
+import org.scoula.common.util.UploadFiles;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
 
-@RequestMapping("/api/board")
-@RequiredArgsConstructor
 @Log4j2
-//@Controller + @ResponseBody
-@RestController //views로 넘어가지 않고 모두 data로 응답하겠다!
-@Api(tags = "게시글 관리")
+@Controller
+@RequestMapping("/board")
+@RequiredArgsConstructor
 public class BoardController {
+    final private BoardService service;
 
-private final BoardService service;//생성자 주입
+    @GetMapping("/list")
+    public void list(Model model) {
 
-    @ApiOperation(value = "게시글 목록", notes = "게시글 목록을 얻는 API")
-    @GetMapping("") // ==> /api/board
-    //@ResponseBody//컨트롤러에서 views로 넘어가지 않고
-    //http의 body에 리턴값을 넣어서 응답해라!
-    public ResponseEntity<List<BoardDTO>> getList(){
-        return ResponseEntity.ok(service.getList());
+        log.info("list");
+        model.addAttribute("list", service.getList());
+
     }
 
-    @GetMapping("/get") // ==> /api/board/get?no=1
-    public BoardDTO get(@RequestParam("no") Long no){
-        return service.get(no);
+
+    @GetMapping("/create")
+    public void create() {
+        log.info("create");
     }
 
-    @ApiOperation(value = "상세정보얻기", notes = "게시글상제정보를얻는API")
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "성공적으로요청이처리되었습니다.", response = BoardDTO.class),
-            @ApiResponse(code = 400, message = "잘못된요청입니다."),
-            @ApiResponse(code = 500, message = "서버에서오류가발생했습니다.")
-    })
-    @GetMapping("/get/{no}") // ==> /api/board/get/15
-    public BoardDTO get2(
-            @ApiParam(value = "게시글 ID", required = true, example = "1")
-            @PathVariable Long no){
-        return service.get(no);
+    @PostMapping("/create")
+    public String create(BoardDTO board) {
+
+        log.info("create: " + board);
+
+        service.create(board);
+
+        return "redirect:/board/list";
     }
 
-    @PostMapping("") // ==> /api/board + post
-    public ResponseEntity<BoardDTO> create(@RequestBody BoardDTO dto){
-        //@RequestBody --> 브라우저에서 보낼때도  json으로 보낼 수 있음.
-        //서버에서 json을 받을 때 사용하는 어노테이션!
-        return ResponseEntity.ok(service.create(dto));
+    @GetMapping({ "/get", "/update" })
+    public void get(@RequestParam("no") Long no, Model model) {
+
+        log.info("/get or update");
+        model.addAttribute("board", service.get(no));
     }
 
+    @PostMapping("/update")
+    public String update(BoardDTO board) {
+        log.info("update:" + board);
+
+        service.update(board);
+
+        return "redirect:/board/list";
+    }
+
+    @PostMapping("/delete")
+    public String delete(@RequestParam("no") Long no) {
+
+        log.info("delete..." + no);
+        service.delete(no);
+
+        return "redirect:/board/list";
+    }
+
+    @GetMapping("/download/{no}")
+    @ResponseBody    // view를 사용하지 않고, 직접 내보냄
+    public void download(@PathVariable("no") Long no, HttpServletResponse response) throws Exception {
+        BoardAttachmentVO attach = service.getAttachment(no);
+        File file = new File(attach.getPath());
+        UploadFiles.download(response, file, attach.getFilename());
+    }
 }
+

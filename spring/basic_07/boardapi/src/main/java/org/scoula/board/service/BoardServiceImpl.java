@@ -33,7 +33,7 @@ public class BoardServiceImpl implements BoardService {
     }
 
     @Override
-    public BoardDTO get(Long no) { //15, 100
+    public BoardDTO get(Long no) {
         log.info("get......" + no);
 
         BoardDTO board = BoardDTO.of(mapper.get(no));
@@ -58,7 +58,7 @@ public class BoardServiceImpl implements BoardService {
     // RuntimeException인 경우만 자동 rollback.
     @Transactional
     @Override
-    public BoardDTO create(BoardDTO board) {
+    public void create(BoardDTO board) {
         log.info("create......" + board);
 
         BoardVO boardVO = board.toVo();
@@ -69,7 +69,6 @@ public class BoardServiceImpl implements BoardService {
         if(files != null && !files.isEmpty()) {	// 첨부 파일이 있는 경우
             upload(boardVO.getNo(), files);
         }
-        return get(boardVO.getNo());
     }
 
     private void upload(Long bno, List<MultipartFile> files) {
@@ -87,20 +86,18 @@ public class BoardServiceImpl implements BoardService {
 
 
     @Override
-    public BoardDTO update(BoardDTO board) {
+    public boolean update(BoardDTO board) {
         log.info("update......" + board);
-        mapper.update(board.toVo());
-        return get(board.getNo());
+
+        return mapper.update(board.toVo()) == 1;
 
     }
 
     @Override
-    public BoardDTO delete(Long no) {
+    public boolean delete(Long no) {
         log.info("delete...." + no);
-        //delete하기전에 삭제될 번호로 검색해오자.
-        BoardDTO board = get(no);
-        mapper.delete(no);
-        return board;
+
+        return mapper.delete(no) == 1;
     }
 
     // 첨부파일 한 개 얻기
